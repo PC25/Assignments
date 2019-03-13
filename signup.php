@@ -1,29 +1,68 @@
 <?php
-
-
-    $sname=$_POST['sname'];
-    $spassword=$_POST['spassword'];
-    $semail=$_POST['semail'];
-    $sdob= $_POST['day']."-".$_POST['month']."-".$_POST['year'];
- 
-    if($sname and $spassword and $semail and $sdob){
-
-
-        $conn = new mysqli("localhost","ritvik","kundalmapur","project");
-        function createUser($name,$password,$email,$dob,$conn){
-            $newQuery = "INSERT INTO users(username,pass,email,dob) VALUES('$name','$password','$email','$dob')";
-            if($conn->query($newQuery)){
-                return true;
-            }
-            else{
-                return false;
-            }
-        }
-        createUser($sname,$spassword,$semail,$sdob,$conn);
-
-        $conn->close();
+    session_start();
+    if(isset($_COOKIE['ssid'])){
+        header("Location: timeline.php");
     }
     
+    
+
+    function createUser($username,$name,$password,$email,$dob,$gender,$conn){
+        $newQuery = "INSERT INTO users(username,person,pass,email,dob,gender) VALUES('$username','$name','$password','$email','$dob','$gender')";
+        $conn->query($newQuery);
+      }
+    
+      $signup_error_msg="";
+      $login_error="";
+    if($_SERVER['REQUEST_METHOD']=='POST'){
+        $conn = new mysqli("localhost","ritvik","kundalmapur","project");
+        if(isset($_POST['submit'])){
+            $susername=htmlspecialchars($_POST['susername']);
+            $sname=htmlspecialchars($_POST['sname']);
+            $spassword=htmlspecialchars($_POST['spassword']);
+            $semail=htmlspecialchars($_POST['semail']);
+            $gender=htmlspecialchars($_POST['gender']);
+            $sdob= htmlspecialchars($_POST['day'])."-".htmlspecialchars($_POST['month'])."-".htmlspecialchars($_POST['year']);
+            
+                $request="SELECT * FROM users WHERE username='$susername' OR email='$semail'";
+                $result=$conn->query($request);
+                echo $conn->error;
+                if($result->num_rows==0)
+                    createUser($susername,$sname,$spassword,$semail,$sdob,$gender,$conn);
+                else
+                    $error_msg="email already exists";
+        }
+        if(isset($_POST['lsubmit'])){
+            $lusername=$_POST['lusername'];
+            $lpass=$_POST['lpassword'];
+            if(!empty($lusername) and !empty($lpass)){
+                $request="SELECT pass FROM users WHERE username='$lusername'";
+                $result=$conn->query($request);
+                if($result->num_rows>0){
+                    $current=$result->fetch_assoc();
+                    if($lpass==$current['pass']){
+                        if(isset($_POST['keepMeSignedIn'])){
+                            setcookie("ssid",session_id(),time()+4*86400);
+                            $_SESSION['username']=$lusername;
+                            $_SESSION['password']=$lpass;
+                            
+                        }
+                        else{
+                            if(isset($_COOKIE['username'])){
+                                unset($_COOKIE['ssid']);
+                            }
+                        }
+                        header("Location: timeline.php");
+                    }
+                }
+                else{
+                    $login_error="You need to register";
+                }
+            }
+        }
+        $conn->close();
+    }
+
+
 ?>
 
 
@@ -46,11 +85,14 @@
     <div class="container display-flex">
     <div class="signup-box display-flex">
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post" class="display-flex form">
+        <input type="text" placeholder="Username" name="susername" class="susername">
+        <span class="sname_error"></span>
+
         <input type="text" placeholder="Name" name="sname" class="sname">
         <span class="sname_error"></span>
 
         <input type="text" placeholder="Email-Adress" name="semail" class="semail">
-        <span class="semail_error"></span>
+        <span class="semail_error"><?php echo $signup_error_msg;?></span>
 
         <input type="password" placeholder="New Password" name="spassword" class="spassword">
         <span class="spassword_error"></span>
@@ -80,11 +122,16 @@
         <span class="dob"></span>
 
         </div>
+        <select name='gender'>
+            <option>MALE</option>
+            <option>FEMALE</option>
+        </select>
         <input type="submit" name="submit" class="submit">
         </form>
     </div>
     <div class="login-box display-flex">
-        <form action="timeline.php" method="post" class="display-flex form">
+        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post" class="display-flex form">
+        <span><?php echo $login_error?></span>
         <input type="text" class="lusername" placeholder="Username" name="lusername">
         <input type="password" class="lpassword" placeholder="Password" name="lpassword">
         <input type="submit" class="submit" name="lsubmit">
