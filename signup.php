@@ -1,7 +1,18 @@
 <?php
-    session_start();
-    if(isset($_COOKIE['ssid'])){
-        header("Location: timeline.php");
+     session_start();
+     include("connection.php");
+     if(isset($_COOKIE['sid'])){
+        $Query="SELECT id FROM remember WHERE string='$_COOKIE[sid]'";
+        print_r($_COOKIE);
+        $result=$conn->query($Query);
+        if($result->num_rows>0){
+            print_r($result);
+            $row=$result->fetch_assoc();
+            $_SESSION['id']=$row['id']; 
+            echo $_SESSION['id'];
+            header("Location: timeline.php");  
+        } 
+        
     }
     
     
@@ -14,7 +25,6 @@
       $signup_error_msg="";
       $login_error="";
     if($_SERVER['REQUEST_METHOD']=='POST'){
-        $conn = new mysqli("localhost","ritvik","kundalmapur","project");
         if(isset($_POST['submit'])){
             $susername=htmlspecialchars($_POST['susername']);
             $sname=htmlspecialchars($_POST['sname']);
@@ -35,21 +45,28 @@
             $lusername=$_POST['lusername'];
             $lpass=$_POST['lpassword'];
             if(!empty($lusername) and !empty($lpass)){
-                $request="SELECT pass FROM users WHERE username='$lusername'";
+                $request="SELECT pass,id FROM users WHERE username='$lusername'";
                 $result=$conn->query($request);
                 if($result->num_rows>0){
                     $current=$result->fetch_assoc();
                     if($lpass==$current['pass']){
+                        $_SESSION['id']=$current['id'];
+                        $id=session_id();
                         if(isset($_POST['keepMeSignedIn'])){
-                            setcookie("ssid",session_id(),time()+4*86400);
-                            $_SESSION['username']=$lusername;
-                            $_SESSION['password']=$lpass;
-                            
+                            setcookie("sid",$id,time()+86400*30);
+                            $newQuery="INSERT INTO remember VALUES($current[id],'$id')";
+                            echo $newQuery;
+                            $conn->query($newQuery);
                         }
                         else{
-                            if(isset($_COOKIE['username'])){
-                                unset($_COOKIE['ssid']);
+                            if(isset($_COOKIE['sid'])){
+                            $newQuery="SELECT id FROM remember WHERE string=$id";
+                            $people=$conn->query($newQuery);
+                            if($people->num_rows>0){
+                                $conn->query("DELETE FROM remember WHERE id=$_COOKIE[sid]");
+                                unset($_COOKIE['sid']);
                             }
+                        }
                         }
                         header("Location: timeline.php");
                     }

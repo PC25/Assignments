@@ -1,20 +1,21 @@
 <?php
-    session_id($_COOKIE['ssid']);
+ 
     session_start();
-    print_r($_SESSION['username']);
+    include("connection.php");
+    $result=$conn->query("SELECT person FROM users WHERE id=".$_SESSION['id']);
+    $temp=$result->fetch_assoc();
+    $currentUser=$temp['person'];       //current user 
 
-    $conn=new mysqli("localhost","ritvik","kundalmapur","project");
-    $query="SELECT person FROM users";
+    $query="SELECT person,id FROM users";
     $result=$conn->query($query);
-    
-    if(isset($_POST['submit'])){
-        unset($_SESSION['username']);
-        unset($_SESSION['password']);
-        unset($_COOKIE['ssid']);
+    $rows=$result->num_rows;
+    if(isset($_POST['logout'])){
+        setcookie('sid',null,-1);
+        $query="DELETE FROM remember WHERE id=$_SESSION[id]";
+        $conn->query($query);
         header("Location:signup.php");
     }
-
-
+   
 ?>
 
 
@@ -33,24 +34,37 @@
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
 </head>
 <body>
-    <div class="navbar display-flex">
+    <div class="navbar display-flex" >
         <div class="profile-photo display-flex">
         <input type="file" name="profile-pic">
         </div>
-        <span class="name"><p>Hi! <?php echo $_SESSION['username']?></p></span>
+        <span class="name"><p>Hi! <?php echo $currentUser;?></p></span>
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post">
-        <input type="submit" name="submit">
-        </form>     
+        <input type="submit" name="logout" value="logout">
+        </form>
+        <form action="edit.php" method="post">
+        <input type="submit" name="submit" value="Edit">
+        </form>
+             
     </div>
-    <div class="users">
+    <form class="users" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post">
+        <div class="user-list">
         <?php
         echo "<ul>";
         while($current=$result->fetch_assoc())
-            echo  "<li>$current[person]</li>";
+            if($current['person']!=$currentUser) echo  "<li>$current[person]</li>  <input type='submit' value='chat' name='$current[id]'>";
         echo "</ul>";
         ?>
-    </div>
+        </div>
+    </form>
     
+    <form class="chat display-flex" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post" name='send'>
+    <div class="inputs display-flex">
+    <input type="text" placeholder="Type Something" class="message" name="message">
+    <input type="submit" placeholder="Send" class="submit" name="send" value=">>>">
+    </div>
+    <?php include("chat.php");?>
+    </form>
 </body>
 <script src="timeline.js">
 </script>

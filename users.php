@@ -1,6 +1,6 @@
 <?php
 
-    $conn=new mysqli("localhost","ritvik","kundalmapur","project");
+    include("connection.php");
     $query="SELECT person FROM users";
     $result=$conn->query($query);
     if($result->num_rows>0){
