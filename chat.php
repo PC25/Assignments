@@ -7,6 +7,7 @@
             $_SESSION['receiver']=$name;
     }
     if(isset($_POST['message']) AND isset($_SESSION['receiver'])){
+        $_POST['message']=htmlspecialchars($_POST['message']);
         $msgQuery="INSERT INTO chat(sender,receiver,string) VALUES($_SESSION[id],$_SESSION[receiver],'$_POST[message]')";
         $conn->query($msgQuery);
     }

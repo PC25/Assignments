@@ -1,5 +1,9 @@
 <?php
      session_start();
+     if(isset($_SESSION['isLoggedin']))
+     if($_SESSION['isLoggedin']){
+         header("Location: timeline.php");
+     }
      include("connection.php");
      if(isset($_COOKIE['sid'])){
         $Query="SELECT id FROM remember WHERE string='$_COOKIE[sid]'";
@@ -9,7 +13,8 @@
             print_r($result);
             $row=$result->fetch_assoc();
             $_SESSION['id']=$row['id']; 
-            echo $_SESSION['id'];
+            $_SESSION['isLoggedin']=true;
+            //echo $_SESSION['id'];
             header("Location: timeline.php");  
         } 
         
@@ -20,26 +25,40 @@
     function createUser($username,$name,$password,$email,$dob,$gender,$conn){
         $newQuery = "INSERT INTO users(username,person,pass,email,dob,gender) VALUES('$username','$name','$password','$email','$dob','$gender')";
         $conn->query($newQuery);
+        $newQuery = "SELECT id FROM users WHERE username='$username'";
+        echo $newQuery;
+        $result=$conn->query($newQuery);
+        $id=$result->fetch_assoc()['id'];
+        $_SESSION['isLoggedin']=true;
+        $_SESSION['id']=$id;
       }
+      function test_input($data) {
+        $data = trim($data);
+        $data = stripslashes($data);
+        $data = htmlspecialchars($data);
+        return $data;
+    }
     
       $signup_error_msg="";
-      $login_error="";
+      if(isset($_POST))
+        $_POST['login_error']="";
     if($_SERVER['REQUEST_METHOD']=='POST'){
         if(isset($_POST['submit'])){
-            $susername=htmlspecialchars($_POST['susername']);
-            $sname=htmlspecialchars($_POST['sname']);
-            $spassword=htmlspecialchars($_POST['spassword']);
-            $semail=htmlspecialchars($_POST['semail']);
-            $gender=htmlspecialchars($_POST['gender']);
-            $sdob= htmlspecialchars($_POST['day'])."-".htmlspecialchars($_POST['month'])."-".htmlspecialchars($_POST['year']);
+            $susername=test_input($_POST['susername']);
+            $sname=test_input($_POST['sname']);
+            $spassword=test_input($_POST['spassword']);
+            $semail=test_input($_POST['semail']);
+            $gender=test_input($_POST['gender']);
+            $sdob= test_input($_POST['day'])."-".htmlspecialchars($_POST['month'])."-".htmlspecialchars($_POST['year']);
             
                 $request="SELECT * FROM users WHERE username='$susername' OR email='$semail'";
                 $result=$conn->query($request);
                 echo $conn->error;
-                if($result->num_rows==0)
+                if($result->num_rows==0){
                     createUser($susername,$sname,$spassword,$semail,$sdob,$gender,$conn);
+                }
                 else
-                    $error_msg="email already exists";
+                    $signup_error_msg="Invalid Email";
         }
         if(isset($_POST['lsubmit'])){
             $lusername=$_POST['lusername'];
@@ -55,24 +74,18 @@
                         if(isset($_POST['keepMeSignedIn'])){
                             setcookie("sid",$id,time()+86400*30);
                             $newQuery="INSERT INTO remember VALUES($current[id],'$id')";
-                            echo $newQuery;
+                            //echo $newQuery;
                             $conn->query($newQuery);
                         }
-                        else{
-                            if(isset($_COOKIE['sid'])){
-                            $newQuery="SELECT id FROM remember WHERE string=$id";
-                            $people=$conn->query($newQuery);
-                            if($people->num_rows>0){
-                                $conn->query("DELETE FROM remember WHERE id=$_COOKIE[sid]");
-                                unset($_COOKIE['sid']);
-                            }
-                        }
-                        }
+                        $_SESSION['isLoggedin']=true;
                         header("Location: timeline.php");
+                    }
+                    else{
+                        $_POST['login_error']="Wrong credentials";
                     }
                 }
                 else{
-                    $login_error="You need to register";
+                    $_POST['login_error']="You need to register";
                 }
             }
         }
@@ -148,7 +161,7 @@
     </div>
     <div class="login-box display-flex">
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post" class="display-flex form">
-        <span><?php echo $login_error?></span>
+        <span><?php echo $_POST['login_error']?></span>
         <input type="text" class="lusername" placeholder="Username" name="lusername">
         <input type="password" class="lpassword" placeholder="Password" name="lpassword">
         <input type="submit" class="submit" name="lsubmit">

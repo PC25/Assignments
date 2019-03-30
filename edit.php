@@ -5,29 +5,23 @@
         //echo "UPDATE users SET $field='$value' WHERE id=$_SESSION[id]";
         $conn->query("UPDATE users SET $field='$value' WHERE id=$_SESSION[id]");
     }
-    if(isset($_SERVER['HTTP_REFERER'])){
-        $arr=explode("/",$_SERVER['HTTP_REFERER']);
-        $referer=end($arr);
-    }
-    else{
-        die("LOGIN FIRST");
-    }
-    if($referer=="timeline.php" or $referer=="edit.php"){  
+    
+    if($_SESSION["isLoggedin"]){  
         $result=$conn->query("SELECT * FROM users WHERE id=$_SESSION[id]");
         $user=$result->fetch_assoc();
         if(isset($_POST['update'])){
-            if($user['pass']==$_POST['password_confirmation']){
-                if($_POST['update_person']!="")
-                    update($conn,'person',$_POST['update_person']);
+            if($user['pass']==htmlspecialchars($_POST['password_confirmation'])){
+                if(htmlspecialchars($_POST['update_person'])!="")
+                    update($conn,'person',htmlspecialchars($_POST['update_person']));
 
-                if($_POST['update_email']!="")
-                    update($conn,'email',$_POST['update_email']);
+                if(htmlspecialchars($_POST['update_email'])!="")
+                    update($conn,'email',htmlspecialchars($_POST['update_email']));
 
-                if($_POST['update_pass']!="")
-                    update($conn,'pass',$_POST['update_pass']);
+                if(htmlspecialchars($_POST['update_pass'])!="")
+                    update($conn,'pass',htmlspecialchars($_POST['update_pass']));
 
-                if($_POST['update_dob']!="")
-                    update($conn,'dob',$_POST['update_dob']);
+                if(htmlspecialchars($_POST['update_dob'])!="")
+                    update($conn,'dob',htmlspecialchars($_POST['update_dob']));
             }
             else{
                 die("WRONG PASSWORD!!!");
