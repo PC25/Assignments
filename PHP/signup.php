@@ -26,11 +26,11 @@
         $newQuery = "INSERT INTO users(username,person,pass,email,dob,gender) VALUES('$username','$name','$password','$email','$dob','$gender')";
         $conn->query($newQuery);
         $newQuery = "SELECT id FROM users WHERE username='$username'";
-        echo $newQuery;
         $result=$conn->query($newQuery);
         $id=$result->fetch_assoc()['id'];
         $_SESSION['isLoggedin']=true;
         $_SESSION['id']=$id;
+        header("Location:timeline.php")
       }
       function test_input($data) {
         $data = trim($data);
